@@ -1,0 +1,36 @@
+name: Deploy Frontend to AWS EC2
+
+# Se activa cada vez que haces un push a la rama 'main'
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_EC2_HOST }}
+          username: ${{ secrets.AWS_EC2_USER }}
+          key: ${{ secrets.AWS_EC2_KEY }}
+          script: |
+            # 1. Navega a la carpeta del frontend en tu servidor
+            cd /home/ec2-user/approval-flow-frontend
+            
+            # 2. Actualiza el código con los últimos cambios
+            git pull
+            
+            # 3. Vuelve al directorio raíz
+            cd /home/ec2-user/
+            
+            # 4. Reconstruye y reinicia SOLO el servicio del frontend
+            docker-compose up -d --build --force-recreate frontend
+            
+            # 5. Limpia imágenes de Docker viejas
+            docker image prune -a -f
